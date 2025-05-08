@@ -7,7 +7,7 @@
 
     this would be a tool that would auto rig the spine
 
-    * would automatically generate the controls for the spine
+    * would automatically generate the FK controls for the spine
     * would allow you to select the color of your choosing for the controls
 
     #Update 5/8/25
