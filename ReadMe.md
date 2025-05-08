@@ -1,6 +1,6 @@
 #   1. Maya Plugin
 
-## 1.1 Spine Rigger
+## 1.1 FK Spine Rigger
 
 <img src= "./assets/SpineRigger.Png" width = 400>
 
