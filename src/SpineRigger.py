@@ -15,23 +15,6 @@ def DeleteWidgetWithName(name):
      for widget in GetMayaMainWindow().findChildren(QWidget, name):
           widget.deleteLater()
 
-class ColorPicker(QWidget):
-     colorChanged = Signal(QColor)
-     def __init__(self):
-          super().__init__()
-          self.masterLayout = QVBoxLayout()
-          self.setLayout(self.masterLayout)
-          self.pickColorBtn = QPushButton()
-          self.pickColorBtn.setStyleSheet(f"background-color:black")
-          self.masterLayout.addWidget(self.pickColorBtn)
-          self.pickColorBtn.clicked.connect(self.PickColorBtnClicked)
-     
-     def PickColorBtnClicked(self):
-          self.color = QColorDialog.getColor()
-          self.pickColorBtn.setStyleSheet(f"background-color:{self.color.name()}")
-          self.colorChanged.emit(self.color)
-          self.color = QColor(0,0,0)
-
 class MayaWindow(QWidget):
      def __init__(self):
           super().__init__(parent = GetMayaMainWindow())
@@ -52,8 +35,14 @@ class SpineRigger:
         self.fourth = ""
         self.end = ""
         self.controllerSize = 5
-        self.controllerColor = QColor()
+        self.controllerColor = [0,0,0]
         
+     def SetColorOverride(self, objName, color: list[float]):
+          mc.setAttr(objName + ".overrideEnabled", 1)
+          mc.setAttr(objName + ".overrideRGBColors", 1)
+          mc.setAttr(objName + ".overrideColorRGB", color[0], color[1], color[2], type="float3")
+
+
      def FindJointBasedOnSelection(self):
           try:
                self.root = mc.ls(sl = True, type = "joint") [0]
@@ -73,8 +62,10 @@ class SpineRigger:
           mc.orientConstraint(ctrlName, jntName)
           return ctrlName, ctrlGrpName
      
+
+
      def CreateCircleController(self, name):
-          mel.eval(f"curve -n {name}-c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0 -tol 0.01 -s 8 -ch 1;")
+          mc.circle(n=name, nr=(0,1,0), r=self.controllerSize)
           mc.scale(self.controllerSize, self.controllerSize, self.controllerSize, name)
           mc.makeIdentity(name, apply = True)
           grpName = name + "_grp"
@@ -106,53 +97,76 @@ class SpineRigger:
           mc.parent(fourthCtrlGrp, midCtrl)
           mc.parent(endCtrlGrp, fourthCtrl)
 
-          ikEndCtrl = "ac_ik_" + self.end
-          ikEndCtrl, ikEndCtrlGrp = self.CreateCircleController(ikEndCtrl)
-          mc.matchTransform(ikEndCtrlGrp, self.end)
-          endOrientContraint = mc.orientConstraint(ikEndCtrl, self.end)[0]
+     
 
-          rootJntLoc = self.GetObjectLocation(self.root)
-          self.PrintVector(rootJntLoc)
+          #ikEndCtrl = "ac_ik_" + self.end
+          #ikEndCtrl, ikEndCtrlGrp = self.CreateCircleController(ikEndCtrl)
+          #mc.matchTransform(ikEndCtrlGrp, self.end)
+          #endOrientContraint = mc.orientConstraint(ikEndCtrl, self.end)[0]
 
-          ikHandleName = "ikHandle_" + self.end
-          mc.ikHandle(n=ikHandleName, sol = "ikRPsolver", sj = self.root, ee = self.end)
+          #rootJntLoc = self.GetObjectLocation(self.root)
+          #self.PrintVector(rootJntLoc)
+
+          #ikHandleName = "ikHandle_" + self.end
+          #mc.ikHandle(n=ikHandleName, sol = "ikRPsolver", sj = self.root, ee = self.end)
           
-          poleVectorLocationVals = mc.getAttr(ikHandleName + ".poleVector")[0]
-          poleVector = MVector(poleVectorLocationVals[0], poleVectorLocationVals[1], poleVectorLocationVals[2])
-          poleVector.normalize()
+          #poleVectorLocationVals = mc.getAttr(ikHandleName + ".poleVector")[0]
+          #poleVector = MVector(poleVectorLocationVals[0], poleVectorLocationVals[1], poleVectorLocationVals[2])
+          #poleVector.normalize()
 
-          endJntLoc = self.GetObjectLocation(self.end)
-          rootToEndVector = endJntLoc - rootJntLoc
+          #endJntLoc = self.GetObjectLocation(self.end)
+          #rootToEndVector = endJntLoc - rootJntLoc
 
-          poleVectorCtrlLoc = rootJntLoc + rootToEndVector / 2 + poleVector * rootToEndVector.length()
-          poleVectorCtrl = "ac_ik_" + self.mid
-          mc.spaceLocator(n=poleVectorCtrl)
-          poleVectorCtrlGrp = poleVectorCtrl + "_grp"
-          mc.group(poleVectorCtrl, n=poleVectorCtrlGrp)
-          mc.setAttr(poleVectorCtrlGrp + ".t", poleVectorCtrlLoc.x, poleVectorCtrlLoc.y, poleVectorCtrlLoc.z, typ= "double3")
+          #poleVectorCtrlLoc = rootJntLoc + rootToEndVector / 2 + poleVector * rootToEndVector.length()
+          #poleVectorCtrl = "ac_ik_" + self.mid
+          #mc.spaceLocator(n=poleVectorCtrl)
+          #poleVectorCtrlGrp = poleVectorCtrl + "_grp"
+          #mc.group(poleVectorCtrl, n=poleVectorCtrlGrp)
+          #mc.setAttr(poleVectorCtrlGrp + ".t", poleVectorCtrlLoc.x, poleVectorCtrlLoc.y, poleVectorCtrlLoc.z, typ= "double3")
 
-          mc.poleVectorConstraint(poleVectorCtrlLoc, ikHandleName)
+          #mc.poleVectorConstraint(poleVectorCtrlLoc, ikHandleName)
           
-          ikfkBlendCtrl = "ac_ikfk_blend_" + self.root
-          ikfkBlendCtrl, ikfkBlendCtrlGrp = self.CreatePlusController(ikfkBlendCtrl)
-          mc.setAttr(ikfkBlendCtrlGrp + ".t", rootJntLoc.x*2, rootJntLoc.y, rootJntLoc.z*2, typ="double3")
+          #ikfkBlendCtrl = "ac_ikfk_blend_" + self.root
+          #ikfkBlendCtrl, ikfkBlendCtrlGrp = self.CreatePlusController(ikfkBlendCtrl)
+          #mc.setAttr(ikfkBlendCtrlGrp + ".t", rootJntLoc.x*2, rootJntLoc.y, rootJntLoc.z*2, typ="double3")
 
-          ikfkBlendAttrName = "sc_ikfkBlend"
-          mc.addAttr(ikfkBlendCtrl, ln=ikfkBlendAttrName, min = 0, max= 1, k=True)
-          ikfkBlendAttr = ikfkBlendCtrl + "." + ikfkBlendAttrName
+          #ikfkBlendAttrName = "sc_ikfkBlend"
+          #mc.addAttr(ikfkBlendCtrl, ln=ikfkBlendAttrName, min = 0, max= 1, k=True)
+          #ikfkBlendAttr = ikfkBlendCtrl + "." + ikfkBlendAttrName
 
-          mc.expression(s=f"{ikHandleName}.ikBlend={ikfkBlendAttr}")
-          mc.expression(s=f"{ikEndCtrlGrp}. v={poleVectorCtrlGrp}.v={ikfkBlendAttr}")
-          mc.expression(s=f"{rootCtrlGrp}.v=1-{ikfkBlendAttr}")
-          mc.expression(s=f"{endOrientContraint}.{endCtrl}W0 = 1-{ikfkBlendAttr}")
-          mc.expression(s=f"{endOrientContraint}.{ikEndCtrl}W1 = {ikfkBlendAttr}")
+          #mc.expression(s=f"{ikHandleName}.ikBlend={ikfkBlendAttr}")
+          #mc.expression(s=f"{ikEndCtrlGrp}. v={poleVectorCtrlGrp}.v={ikfkBlendAttr}")
+          #mc.expression(s=f"{rootCtrlGrp}.v=1-{ikfkBlendAttr}")
+          #mc.expression(s=f"{endOrientContraint}.{endCtrl}W0 = 1-{ikfkBlendAttr}")
+          #mc.expression(s=f"{endOrientContraint}.{ikEndCtrl}W1 = {ikfkBlendAttr}")
 
-          topGrpName = f"{self.root}_rig_grp"
-          mc.group({rootCtrlGrp,ikEndCtrlGrp,poleVectorCtrlGrp,ikfkBlendCtrlGrp}, n= topGrpName)
-          mc.parent(ikHandleName,ikEndCtrl)
+          #topGrpName = f"{self.root}_rig_grp"
+          #mc.group({rootCtrlGrp,ikEndCtrlGrp,poleVectorCtrlGrp,ikfkBlendCtrlGrp}, n= topGrpName)
+          #mc.parent(ikHandleName,ikEndCtrl)
  
-          mc.setAttr(topGrpName+".overrideEnabled", 1)
-          mc.setAttr(topGrpName+".overrideGBColors",1)
+          #mc.setAttr(topGrpName+".overrideEnabled", 1)
+          #mc.setAttr(topGrpName+".overrideGBColors",1)
+          #mc.setAttr(topGrpName+"overrideColorRGB", self.controllerColor[0], self.controllerColor[1],self.controllerColor[2], type = "double3")
+
+          self.SetColorOverride(rootCtrlGrp, self.controllerColor)
+
+class ColorPicker(QWidget):
+     colorChanged = Signal(QColor)
+     def __init__(self):
+          super().__init__()
+          self.masterLayout = QVBoxLayout()
+          self.setLayout(self.masterLayout)
+          self.pickColorBtn = QPushButton()
+          self.pickColorBtn.setStyleSheet(f"background-color:black")
+          self.masterLayout.addWidget(self.pickColorBtn)
+          self.pickColorBtn.clicked.connect(self.PickColorBtnClicked)
+     
+     def PickColorBtnClicked(self):
+          self.color = QColorDialog.getColor()
+          self.pickColorBtn.setStyleSheet(f"background-color:{self.color.name()}")
+          self.colorChanged.emit(self.color)
+          self.color = QColor(0,0,0)
+
 
 class SpineRiggerWidget(MayaWindow):
      def __init__(self):
