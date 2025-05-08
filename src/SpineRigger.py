@@ -214,4 +214,4 @@ class SpineRiggerWidget(MayaWindow):
 spineRigger = SpineRiggerWidget() 
 spineRigger.show()   
 
-GetMayaMainWindow()
+GetMayaMainWindow() #Update Code for Spine 
